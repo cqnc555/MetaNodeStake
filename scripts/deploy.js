@@ -38,6 +38,21 @@ async function main() {
     const tx = await metaNodeToken.connect(deployer).transfer(stakeAddress, tokenAmount);
     await tx.wait();
     console.log(`成功将 ${ethers.formatUnits(tokenAmount, 18)} 枚 MetaNode 转移至质押合约`);
+
+    console.log("\n--- 开始初始化第一个 ETH 质押池 (PID: 0) ---");
+    // 参数: stTokenAddress(0x0代表ETH), poolWeight, minDepositAmount, unstakeLockedBlocks, withUpdate
+    const addPoolTx = await stake.connect(deployer).addPool(
+        ethers.ZeroAddress, // 0地址代表原生 ETH
+        100,                // 权重 100
+        0,                  // 最小质押额限制为 0
+        10,                 // 锁定期区块数 (比如锁定 10 个区块)
+        false               // withUpdate (第一个池子不需要 update)
+    );
+    await addPoolTx.wait();
+    console.log("✅ 初始 ETH 质押池添加成功！");
+
+
+
     console.log("🎉 部署流程全部完成！");
 }
 

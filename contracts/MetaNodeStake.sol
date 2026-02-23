@@ -355,6 +355,37 @@ contract MetaNodeStake is Initializable, AccessControlUpgradeable, PausableUpgra
     }
 
 
+    // ================= 前端查询辅助函数 (Query Functions) =================
+
+    /**
+     * @notice 获取用户的已质押本金 (前端首页展示需要)
+     */
+    function stakingBalance(
+        uint256 _pid,
+        address _user
+    ) external view checkPid(_pid) returns (uint256) {
+        return users[_pid][_user].stAmount;
+    }
+
+    /**
+     * @notice 获取用户处于解绑队列中的金额信息 (前端提现页需要)
+     * @return requestAmount 总共申请解质押（还在队列里）的金额
+     * @return pendingWithdrawAmount 已经度过锁定期，当前立刻可以提现到钱包的金额
+     */
+    function withdrawAmount(
+        uint256 _pid,
+        address _user
+    ) public view checkPid(_pid) returns (uint256 requestAmount, uint256 pendingWithdrawAmount) {
+        User storage user_ = users[_pid][_user];
+
+        for (uint256 i = 0; i < user_.requests.length; i++) {
+            if (user_.requests[i].unlockBlocks <= block.number) {
+                pendingWithdrawAmount = pendingWithdrawAmount + user_.requests[i].amount;
+            }
+            requestAmount = requestAmount + user_.requests[i].amount;
+        }
+    }
+
 
     /**
      * @notice 质押以太坊 (原生代币)
