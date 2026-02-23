@@ -6,14 +6,22 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+// 引用 safeTransferFrom 安全转让代币方法
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+// 使用 tryMul  tryDiv 等安全计算方法
+import "@openzeppelin/contracts/utils/math/Math.sol";
 
 contract MetaNodeStake is Initializable, AccessControlUpgradeable, PausableUpgradeable, UUPSUpgradeable {
-    
+    // 引用 safeTransferFrom 安全转让代币方法
+    using SafeERC20 for IERC20;
+    // 使用 tryMul  tryDiv 等安全计算方法
+    using Math for uint256;
+
     // ================= 定义角色 =================
     // 管理员角色
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
-    // 默认管理员角色
-    bytes32 public constant DEFAULT_ADMIN_ROLE = keccak256("DEFAULT_ADMIN_ROLE");
+    // 默认管理员角色  @openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol:57:5:  已经定义这个值了，不需要额外定义
+//    bytes32 public constant DEFAULT_ADMIN_ROLE = keccak256("DEFAULT_ADMIN_ROLE");
     // 升级角色
     bytes32 public constant UPGRADE_ROLE = keccak256("UPGRADE_ROLE");
 
@@ -61,6 +69,18 @@ contract MetaNodeStake is Initializable, AccessControlUpgradeable, PausableUpgra
         _;
     }
 
+    // 检查提现是否被暂停
+    modifier whenNotWithdrawPaused() {
+        require(!withdrawPaused, "withdraw is paused");
+        _;
+    }
+
+    // 检查领奖是否被暂停
+    modifier whenNotClaimPaused() {
+        require(!claimPaused, "claim is paused");
+        _;
+    }
+
 
     // ================= 状态变量 =================
     
@@ -78,6 +98,10 @@ contract MetaNodeStake is Initializable, AccessControlUpgradeable, PausableUpgra
 
     // 防止重入攻击的标识 (更推荐使用 ReentrancyGuardUpgradeable，这里仅作演示)
     bool private _locked;
+
+    // 是否暂停提现和领奖 (紧急开关)
+    bool public withdrawPaused;
+    bool public claimPaused;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -564,5 +588,38 @@ contract MetaNodeStake is Initializable, AccessControlUpgradeable, PausableUpgra
             (1 ether);
 
         emit Claim(msg.sender, _pid, pendingMetaNode_);
+    }
+
+    // ================= 内部安全转账函数 =================
+
+    /**
+     * @notice 安全的 MetaNode 代币转账函数
+     * @dev 应对极端情况：如果合约里的代币余额因为精度计算误差比应发数量少了那么一点点，就只发送实际余额，防止交易 revert
+     */
+    function _safeMetaNodeTransfer(address _to, uint256 _amount) internal {
+        uint256 metaNodeBal = metaNodeToken.balanceOf(address(this));
+        if (_amount > metaNodeBal) {
+            metaNodeToken.transfer(_to, metaNodeBal);
+        } else {
+            metaNodeToken.transfer(_to, _amount);
+        }
+    }
+
+    /**
+     * @notice 安全的以太坊 (原生代币) 转账函数
+     * @dev 使用底层的 call 方法进行转账，比 transfer 更节省 Gas 且更安全
+     */
+    function _safeETHTransfer(address _to, uint256 _amount) internal {
+        // 底层 call 转账
+        (bool success, bytes memory data) = address(_to).call{value: _amount}("");
+        require(success, "ETH transfer call failed");
+
+        // 验证返回数据（如果有的话）
+        if (data.length > 0) {
+            require(
+                abi.decode(data, (bool)),
+                "ETH transfer operation did not succeed"
+            );
+        }
     }
 }
