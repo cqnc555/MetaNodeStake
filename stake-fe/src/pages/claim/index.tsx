@@ -25,7 +25,9 @@ const Claim = () => {
     
     try {
       setClaimLoading(true);
-      const tx = await stakeContract.write.claim([Pid]);
+      const tx = await stakeContract.write.claim([Pid] , {
+        gas: 3000000n
+      });
       console.log(tx, '===tx===');
       
       const res = await waitForTransactionReceipt(data, { hash: tx });

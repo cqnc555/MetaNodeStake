@@ -66,7 +66,9 @@ const Withdraw = () => {
     }
     try {
       setUnstakeLoading(true);
-      const tx = await stakeContract.write.unstake([Pid, parseUnits(amount, 18)]);
+      const tx = await stakeContract.write.unstake([Pid, parseUnits(amount, 18)] , {
+        gas: 3000000n
+      });
       console.log('stakeContract', stakeContract)
       console.log('Pid', Pid)
       await waitForTransactionReceipt(data, { hash: tx });
@@ -85,7 +87,9 @@ const Withdraw = () => {
     if (!stakeContract || !data) return;
     try {
       setWithdrawLoading(true);
-      const tx = await stakeContract.write.withdraw([Pid]);
+      const tx = await stakeContract.write.withdraw([Pid] , {
+        gas: 3000000n
+      });
       await waitForTransactionReceipt(data, { hash: tx });
       toast.success('Withdraw successful!');
       setWithdrawLoading(false);

@@ -1,2 +1,1 @@
-
-export const Pid = 0
+export const Pid = 0;

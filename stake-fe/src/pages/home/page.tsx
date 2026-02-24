@@ -5,7 +5,7 @@ import useRewards from "../../hooks/useRewards";
 import { useCallback, useState } from "react";
 import { Pid } from "../../utils";
 import { useAccount, useWalletClient, useBalance } from "wagmi";
-import { parseUnits } from "viem";
+import {parseEther, parseUnits} from "viem";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { toast } from "react-toastify";
 import { waitForTransactionReceipt } from "viem/actions";
@@ -47,9 +47,12 @@ const Home = () => {
     try {
       setLoading(true);
       // const tx = await stakeContract.write.depositETH({ value: parseUnits(amount, 18) });
+      // 固定 gas费，在本地测试时，估算gas费是BUG，需要指定gas费
       const tx = await stakeContract.write.depositETH({
-        value: parseUnits(amount, 18)
+        value: parseUnits(amount, 18),
+        gas: 3000000n
       });
+
       const res = await waitForTransactionReceipt(data, { hash: tx });
       console.log({ res })
       if (res.status === 'success') {
@@ -72,7 +75,10 @@ const Home = () => {
     
     try {
       setClaimLoading(true);
-      const tx = await stakeContract.write.claim([Pid]);
+      // @ts-ignore
+      const tx = await stakeContract.write.claim([Pid] , {
+        gas: 3000000n
+      });
       const res = await waitForTransactionReceipt(data, { hash: tx });
       
       if (res.status === 'success') {
