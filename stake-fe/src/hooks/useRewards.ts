@@ -86,11 +86,17 @@ const useRewards = () => {
         stakeContract.read.stakingBalance([Pid, address]) as Promise<bigint>
       );
 
+      // 增加实时查询收益的方法
+      const realTimePending = await retryWithDelay(() =>
+          stakeContract.read.pendingMetaNode([Pid, address]) as Promise<bigint>
+      );
+
       console.log('User data:', userData);
       console.log('Staked amount:', stakedAmount);
 
       setRewardsData({
-        pendingReward: formatUnits(userData[2] || BigInt(0), 18),
+        // pendingReward: formatUnits(userData[2] || BigInt(0), 18),
+        pendingReward: formatUnits(realTimePending || BigInt(0), 18),
         stakedAmount: formatUnits(stakedAmount as bigint || BigInt(0), 18),
         lastUpdate: Date.now()
       });

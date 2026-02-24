@@ -69,13 +69,13 @@ contract MetaNodeStake is Initializable, AccessControlUpgradeable, PausableUpgra
         _;
     }
 
-    // 检查提现是否被暂停
+    // 检查提现是否被暂停 True 是暂停
     modifier whenNotWithdrawPaused() {
         require(!withdrawPaused, "withdraw is paused");
         _;
     }
 
-    // 检查领奖是否被暂停
+    // 检查领奖是否被暂停 True 是暂停
     modifier whenNotClaimPaused() {
         require(!claimPaused, "claim is paused");
         _;
